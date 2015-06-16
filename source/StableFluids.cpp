@@ -4,8 +4,8 @@
 #include "ScalarField.h"
 #include "VectorField.h"
 #include "FieldToolbox.h"
-#include "imageio.h"
 
+#include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/glu.h>
@@ -95,25 +95,6 @@ static void pre_display ( void )
 
 static void post_display ( void )
 {
-	// Write frames if necessary.
-	if (dump_frames) {
-		const int FRAME_INTERVAL = 4;
-		if ((frame_number % FRAME_INTERVAL) == 0) {
-			const unsigned int w = glutGet(GLUT_WINDOW_WIDTH);
-			const unsigned int h = glutGet(GLUT_WINDOW_HEIGHT);
-			unsigned char * buffer = (unsigned char *) malloc(w * h * 4 * sizeof(unsigned char));
-			if (!buffer)
-				exit(-1);
-			// glRasterPos2i(0, 0);
-			glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-			char filename[13];
-			sprintf(filename, "img%.5i.png", frame_number / FRAME_INTERVAL);
-			printf("Dumped %s.\n", filename);
-			saveImageRGBA(filename, buffer, w, h);
-		}
-	}
-	frame_number++;
-
 	glutSwapBuffers ();
 }
 

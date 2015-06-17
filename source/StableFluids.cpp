@@ -1,19 +1,31 @@
-// StableFluids.cpp : Defines the entry point for the console application.
-//
+/*
+  ======================================================================
+   demo.c --- protoype to show off the simple solver
+  ----------------------------------------------------------------------
+   Author : Jos Stam (jstam@aw.sgi.com)
+   Creation Date : Jan 9 2003
 
-#include "ScalarField.h"
-#include "VectorField.h"
-#include "FieldToolbox.h"
+   Description:
 
-#include <windows.h>
+	This code is a simple prototype that demonstrates how to use the
+	code provided in my GDC2003 paper entitles "Real-Time Fluid Dynamics
+	for Games". This code uses OpenGL and GLUT for graphics and interface
+
+  =======================================================================
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <GL/glu.h>
 #include <GL/glut.h>
 
 /* macros */
 
 #define IX(i,j) ((i)+(N+2)*(j))
+
+/* external definitions (from solver.c) */
+
+extern void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff, float dt );
+extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt );
 
 /* global variables */
 
@@ -21,11 +33,9 @@ static int N;
 static float dt, diff, visc;
 static float force, source;
 static int dvel;
-static int dump_frames;
-static int frame_number;
 
-static VectorField *VelocityField, *PrevVelocityField;
-static ScalarField *DensityField, *PrevDensityField;
+static float * u, * v, * u_prev, * v_prev;
+static float * dens, * dens_prev;
 
 static int win_id;
 static int win_x, win_y;
@@ -34,18 +44,20 @@ static int omx, omy, mx, my;
 
 
 /*
-----------------------------------------------------------------------
-free/clear/allocate simulation data
-----------------------------------------------------------------------
+  ----------------------------------------------------------------------
+   free/clear/allocate simulation data
+  ----------------------------------------------------------------------
 */
 
 
 static void free_data ( void )
 {
-	if( VelocityField ) delete ( VelocityField );
-	if( PrevVelocityField ) delete ( PrevVelocityField );
-	if( DensityField ) delete ( DensityField );
-	if( PrevDensityField ) delete ( PrevDensityField );
+	if ( u ) free ( u );
+	if ( v ) free ( v );
+	if ( u_prev ) free ( u_prev );
+	if ( v_prev ) free ( v_prev );
+	if ( dens ) free ( dens );
+	if ( dens_prev ) free ( dens_prev );
 }
 
 static void clear_data ( void )
@@ -53,22 +65,22 @@ static void clear_data ( void )
 	int i, size=(N+2)*(N+2);
 
 	for ( i=0 ; i<size ; i++ ) {
-		(*VelocityField)[i][0] = (*VelocityField)[i][1] = 0.0f;
-		(*PrevVelocityField)[i][0] = (*PrevVelocityField)[i][1] = 0.0f;
-		(*DensityField)[i] = 0.0f;
-		(*PrevDensityField)[i] = 0.0f;
+		u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
 	}
 }
 
 static int allocate_data ( void )
 {
-	FieldToolbox::Create();
-	VelocityField	  = new VectorField(N, visc, dt);
-	PrevVelocityField = new VectorField(N, visc, dt);
-	DensityField	  = new ScalarField(N, diff, dt);
-	PrevDensityField  = new ScalarField(N, diff, dt);
+	int size = (N+2)*(N+2);
 
-	if ( !VelocityField || !PrevVelocityField || !DensityField || !PrevDensityField ) {
+	u			= (float *) malloc ( size*sizeof(float) );
+	v			= (float *) malloc ( size*sizeof(float) );
+	u_prev		= (float *) malloc ( size*sizeof(float) );
+	v_prev		= (float *) malloc ( size*sizeof(float) );
+	dens		= (float *) malloc ( size*sizeof(float) );	
+	dens_prev	= (float *) malloc ( size*sizeof(float) );
+
+	if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) {
 		fprintf ( stderr, "cannot allocate data\n" );
 		return ( 0 );
 	}
@@ -78,9 +90,9 @@ static int allocate_data ( void )
 
 
 /*
-----------------------------------------------------------------------
-OpenGL specific drawing routines
-----------------------------------------------------------------------
+  ----------------------------------------------------------------------
+   OpenGL specific drawing routines
+  ----------------------------------------------------------------------
 */
 
 static void pre_display ( void )
@@ -110,15 +122,15 @@ static void draw_velocity ( void )
 
 	glBegin ( GL_LINES );
 
-	for ( i=1 ; i<=N ; i++ ) {
-		x = (i-0.5f)*h;
-		for ( j=1 ; j<=N ; j++ ) {
-			y = (j-0.5f)*h;
+		for ( i=1 ; i<=N ; i++ ) {
+			x = (i-0.5f)*h;
+			for ( j=1 ; j<=N ; j++ ) {
+				y = (j-0.5f)*h;
 
-			glVertex2f ( x, y );
-			glVertex2f ( x+(*VelocityField)[IX(i,j)][0], y+(*VelocityField)[IX(i,j)][1] );
+				glVertex2f ( x, y );
+				glVertex2f ( x+u[IX(i,j)], y+v[IX(i,j)] );
+			}
 		}
-	}
 
 	glEnd ();
 }
@@ -132,38 +144,38 @@ static void draw_density ( void )
 
 	glBegin ( GL_QUADS );
 
-	for ( i=0 ; i<=N ; i++ ) {
-		x = (i-0.5f)*h;
-		for ( j=0 ; j<=N ; j++ ) {
-			y = (j-0.5f)*h;
+		for ( i=0 ; i<=N ; i++ ) {
+			x = (i-0.5f)*h;
+			for ( j=0 ; j<=N ; j++ ) {
+				y = (j-0.5f)*h;
 
-			d00 = (*DensityField)[IX(i,j)];
-			d01 = (*DensityField)[IX(i,j+1)];
-			d10 = (*DensityField)[IX(i+1,j)];
-			d11 = (*DensityField)[IX(i+1,j+1)];
+				d00 = dens[IX(i,j)];
+				d01 = dens[IX(i,j+1)];
+				d10 = dens[IX(i+1,j)];
+				d11 = dens[IX(i+1,j+1)];
 
-			glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-			glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-			glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-			glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+				glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
+				glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
+				glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
+				glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+			}
 		}
-	}
 
 	glEnd ();
 }
 
 /*
-----------------------------------------------------------------------
-relates mouse movements to forces sources
-----------------------------------------------------------------------
+  ----------------------------------------------------------------------
+   relates mouse movements to forces sources
+  ----------------------------------------------------------------------
 */
 
-static void get_from_UI( ScalarField * d, VectorField * u_v )
+static void get_from_UI ( float * d, float * u, float * v )
 {
 	int i, j, size = (N+2)*(N+2);
 
 	for ( i=0 ; i<size ; i++ ) {
-		(*u_v)[i][0] = (*u_v)[i][1] = (*d)[i] = 0.0f;
+		u[i] = v[i] = d[i] = 0.0f;
 	}
 
 	if ( !mouse_down[0] && !mouse_down[2] ) return;
@@ -174,12 +186,12 @@ static void get_from_UI( ScalarField * d, VectorField * u_v )
 	if ( i<1 || i>N || j<1 || j>N ) return;
 
 	if ( mouse_down[0] ) {
-		(*u_v)[IX(i,j)][0] = force * (mx-omx);
-		(*u_v)[IX(i,j)][1] = force * (omy-my);
+		u[IX(i,j)] = force * (mx-omx);
+		v[IX(i,j)] = force * (omy-my);
 	}
 
 	if ( mouse_down[2] ) {
-		(*d)[IX(i,j)] = source;
+		d[IX(i,j)] = source;
 	}
 
 	omx = mx;
@@ -189,35 +201,30 @@ static void get_from_UI( ScalarField * d, VectorField * u_v )
 }
 
 /*
-----------------------------------------------------------------------
-GLUT callback routines
-----------------------------------------------------------------------
+  ----------------------------------------------------------------------
+   GLUT callback routines
+  ----------------------------------------------------------------------
 */
 
 static void key_func ( unsigned char key, int x, int y )
 {
 	switch ( key )
 	{
-	case 'c':
-	case 'C':
-		clear_data ();
-		break;
+		case 'c':
+		case 'C':
+			clear_data ();
+			break;
 
-	case 'd':
-	case 'D':
-		dump_frames = !dump_frames;
-		break;
+		case 'q':
+		case 'Q':
+			free_data ();
+			exit ( 0 );
+			break;
 
-	case 'q':
-	case 'Q':
-		free_data ();
-		exit ( 0 );
-		break;
-
-	case 'v':
-	case 'V':
-		dvel = !dvel;
-		break;
+		case 'v':
+		case 'V':
+			dvel = !dvel;
+			break;
 	}
 }
 
@@ -225,10 +232,6 @@ static void mouse_func ( int button, int state, int x, int y )
 {
 	omx = mx = x;
 	omx = my = y;
-
-	if (glutGetModifiers() & GLUT_ACTIVE_SHIFT) {
-		button = 2;
-	}
 
 	mouse_down[button] = state == GLUT_DOWN;
 }
@@ -250,10 +253,10 @@ static void reshape_func ( int width, int height )
 
 static void idle_func ( void )
 {
-	get_from_UI( PrevDensityField, PrevVelocityField );
-	VelocityField->TimeStep( PrevVelocityField, VelocityField );
-	DensityField->TimeStep( PrevDensityField, VelocityField );
-	
+	get_from_UI ( dens_prev, u_prev, v_prev );
+	vel_step ( N, u, v, u_prev, v_prev, visc, dt );
+	dens_step ( N, dens, dens_prev, u, v, diff, dt );
+
 	glutSetWindow ( win_id );
 	glutPostRedisplay ();
 }
@@ -262,18 +265,17 @@ static void display_func ( void )
 {
 	pre_display ();
 
-	if ( dvel ) draw_velocity ();
-	else		draw_density ();
-	
+		if ( dvel ) draw_velocity ();
+		else		draw_density ();
 
 	post_display ();
 }
 
 
 /*
-----------------------------------------------------------------------
-open_glut_window --- open a glut compatible window and set callbacks
-----------------------------------------------------------------------
+  ----------------------------------------------------------------------
+   open_glut_window --- open a glut compatible window and set callbacks
+  ----------------------------------------------------------------------
 */
 
 static void open_glut_window ( void )
@@ -282,7 +284,7 @@ static void open_glut_window ( void )
 
 	glutInitWindowPosition ( 0, 0 );
 	glutInitWindowSize ( win_x, win_y );
-	win_id = glutCreateWindow ( "Stable Fluids!" );
+	win_id = glutCreateWindow ( "Alias | wavefront" );
 
 	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
 	glClear ( GL_COLOR_BUFFER_BIT );
@@ -302,9 +304,9 @@ static void open_glut_window ( void )
 
 
 /*
-----------------------------------------------------------------------
-main --- main routine
-----------------------------------------------------------------------
+  ----------------------------------------------------------------------
+   main --- main routine
+  ----------------------------------------------------------------------
 */
 
 int main ( int argc, char ** argv )
@@ -314,7 +316,7 @@ int main ( int argc, char ** argv )
 	if ( argc != 1 && argc != 6 ) {
 		fprintf ( stderr, "usage : %s N dt diff visc force source\n", argv[0] );
 		fprintf ( stderr, "where:\n" );\
-			fprintf ( stderr, "\t N      : grid resolution\n" );
+		fprintf ( stderr, "\t N      : grid resolution\n" );
 		fprintf ( stderr, "\t dt     : time step\n" );
 		fprintf ( stderr, "\t diff   : diffusion rate of the density\n" );
 		fprintf ( stderr, "\t visc   : viscosity of the fluid\n" );
@@ -361,5 +363,3 @@ int main ( int argc, char ** argv )
 
 	exit ( 0 );
 }
-
-

@@ -15,27 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FieldToolbox.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ScalarField.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="StableFluids.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VectorField.cpp">
+    <ClCompile Include="Solver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FieldToolbox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ScalarField.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VectorField.h">
+    <ClInclude Include="Solver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

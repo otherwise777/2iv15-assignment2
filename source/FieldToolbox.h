@@ -1,8 +1,5 @@
 #pragma once
 
-#include "ScalarField.h"
-#include "VectorField.h"
-
 #include <gfx/vec2.h>
 #include <Singleton.h>
 

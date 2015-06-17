@@ -10,6 +10,7 @@ public:
 
 	void	TimeStep(ScalarField *a_SrcField, VectorField *VelocityField);
 	void	AddField(ScalarField *a_SrcField);
+	void    Advection(VectorField *VelocityField);
 
 	float	&operator[](int i)       { return m_Field[i]; }
 

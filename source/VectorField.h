@@ -10,6 +10,7 @@ public:
 
 	void	TimeStep(VectorField *a_SrcField, VectorField *VelocityField);
 	void	AddField(VectorField *a_SrcField);
+	void	Advection(VectorField *VelocityField);
 
 	Vec2f	&operator[](int i)       { return m_Field[i]; }
 

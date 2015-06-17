@@ -33,23 +33,9 @@ void
 VectorField::TimeStep(VectorField *a_SrcField, VectorField *VelocityField)
 {
 	AddField(a_SrcField);
-	//Advection(VelocityField);	// Add this function
+	Advection(VelocityField);	// Add this function
 	//VorticityConfinement();	// Add this function
 	//Projection();				// Add this function
-
-	/*****************************************/
-	/************* DELETE THIS ***************/
-	static float change = .001f;
-	change += .001f;
-	float schange = 0.005f*sin(change);
-	schange += 1.f;
-	
-	ITER_DIM
-		m_Field[IX_DIM(i,j)][0] *=	schange;
-		m_Field[IX_DIM(i,j)][1] *=	schange;
-	ENDITER_DIM
-	/************* DELETE THIS ***************/
-	/*****************************************/
 }
 
 void
@@ -59,5 +45,32 @@ VectorField::AddField(VectorField *a_SrcField)
 		m_Field[i][0] += m_Dt*((*a_SrcField)[i][0]);
 		m_Field[i][1] += m_Dt*((*a_SrcField)[i][1]);
 	}
+}
+
+void VectorField::Advection(VectorField *VelocityField)
+{
+	ITER_DIM
+
+	// Previous position of center
+	Vec2f w2 = Vec2f(i, j) - m_Dt * m_Field[IX_DIM(i, j)];
+
+	// Calculate the weights for each pixel
+	float xd = w2[0] - (int)w2[0];
+	float yd = w2[1] - (int)w2[1];
+	
+	// Get surrounding cells
+	Vec2f v00 = VelocityField->m_Field[IX_DIM(i, j)];
+	Vec2f v10 = VelocityField->m_Field[IX_DIM(i + 1, j)];
+	Vec2f v01 = VelocityField->m_Field[IX_DIM(i, j + 1)];
+	Vec2f v11 = VelocityField->m_Field[IX_DIM(i + 1, j + 1)];
+
+	Vec2f c0 = v00 * (1 - xd) + v10 * xd;
+	Vec2f c1 = v01 * (1 - xd) + v11 * xd;
+
+	Vec2f c = c0 * (1 - yd) + c1 * yd;
+
+	m_Field[IX_DIM(i, j)] = c;
+
+	ENDITER_DIM
 }
 

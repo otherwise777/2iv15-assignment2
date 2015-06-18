@@ -34,7 +34,7 @@ static float dt, diff, visc;
 static float force, source;
 static int dvel;
 
-static float * u, * v, * u_prev, * v_prev;
+static float * u, * v, * u_prev, * v_prev, * squareObject;
 static float * dens, * dens_prev;
 
 static int win_id;
@@ -73,12 +73,13 @@ static int allocate_data ( void )
 {
 	int size = (N+2)*(N+2);
 
-	u			= (float *) malloc ( size*sizeof(float) );
-	v			= (float *) malloc ( size*sizeof(float) );
-	u_prev		= (float *) malloc ( size*sizeof(float) );
-	v_prev		= (float *) malloc ( size*sizeof(float) );
-	dens		= (float *) malloc ( size*sizeof(float) );	
-	dens_prev	= (float *) malloc ( size*sizeof(float) );
+	u				= (float *) malloc ( size*sizeof(float) );
+	v				= (float *) malloc ( size*sizeof(float) );
+	u_prev			= (float *) malloc ( size*sizeof(float) );
+	v_prev			= (float *) malloc ( size*sizeof(float) );
+	dens			= (float *) malloc ( size*sizeof(float) );	
+	dens_prev		= (float *) malloc ( size*sizeof(float) );
+	squareObject	= (float *)malloc(size*sizeof(float));
 
 	if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) {
 		fprintf ( stderr, "cannot allocate data\n" );
@@ -108,6 +109,63 @@ static void pre_display ( void )
 static void post_display ( void )
 {
 	glutSwapBuffers ();
+}
+
+
+//function to get the object num, same as IX so useless
+static int getObjectNum(int i, int j) {
+	return((i)+(N + 2)*(j));
+}
+
+//draw a square object in the middle
+static void draw_square(void) {
+	int i, j;
+	float x1, x2, y1, y2, h;
+
+	//defining the object
+	squareObject[IX(30, 30)] = 1;
+	//squareObject[IX(31, 31)] = 1;
+	squareObject[IX(32, 32)] = 1;
+	//squareObject[IX(32, 30)] = 1;
+	//squareObject[IX(30, 32)] = 1;
+	squareObject[IX(33, 33)] = 1;
+	squareObject[IX(35, 35)] = 1;
+	//end defining the square
+
+
+	h = 1.0f / N;
+
+	glColor3f(1.0f, 1.0f, 0.0f);
+	glLineWidth(1.0f);
+
+	glBegin(GL_QUADS);
+
+	for (i = 1; i <= N; i++)
+	{
+		x1 = (i ) * h;
+		x2 = (i) * h;
+		for (j = 1; j <= N; j++)
+		{
+			y1 = (j ) * h;
+			y2 = (j) * h;
+
+			if (squareObject[IX(i, j)] == 1)
+			{
+				glColor3f(0.0f, 1.0f, 0.0f);
+
+				glVertex2f(x1, y1);
+				glVertex2f(x1 + 1 * h, y1);
+				glVertex2f(x1 + 1 * h, y1 + 1 * h);
+				glVertex2f(x1, y1 + 1 * h);
+			}
+		}
+	}
+	glEnd();
+
+
+
+	//movingObject->draw();
+
 }
 
 static void draw_velocity ( void )
@@ -265,9 +323,14 @@ static void display_func ( void )
 {
 	pre_display ();
 
-		if ( dvel ) draw_velocity ();
-		else		draw_density ();
+	if (dvel) {
+		draw_velocity();
+	}
+	else {
 
+		draw_density();
+		draw_square();
+	}
 	post_display ();
 }
 

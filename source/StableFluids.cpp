@@ -33,6 +33,7 @@ static int N;
 static float dt, diff, visc;
 static float force, source;
 static int dvel;
+static bool addingBarrier = false;
 
 static float * u, * v, * u_prev, * v_prev, * squareObject;
 static float * dens, * dens_prev;
@@ -249,7 +250,12 @@ static void get_from_UI ( float * d, float * u, float * v )
 	}
 
 	if ( mouse_down[2] ) {
-		d[IX(i,j)] = source;
+		if (addingBarrier) {
+			squareObject[IX(i, j)] = 1;
+		}
+		else {
+			d[IX(i, j)] = source;
+		}
 	}
 
 	omx = mx;
@@ -271,17 +277,24 @@ static void key_func ( unsigned char key, int x, int y )
 		case 'c':
 		case 'C':
 			clear_data ();
+			printf("Pressed C.\n");
 			break;
 
 		case 'q':
 		case 'Q':
 			free_data ();
 			exit ( 0 );
+			printf("Pressed Q.\n");
 			break;
 
 		case 'v':
 		case 'V':
 			dvel = !dvel;
+			break;
+		case 'b':
+		case 'B':
+			addingBarrier = !addingBarrier;
+			printf("The barrier mode has been turned %s.\n", (addingBarrier ? "on" : "off"));
 			break;
 	}
 }

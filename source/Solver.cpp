@@ -11,9 +11,9 @@ void add_source ( int N, float * x, float * s, float dt )
 	for ( i=0 ; i<size ; i++ ) x[i] += dt*s[i];
 }
 
-void set_bnd ( int N, int b, float * x )
+void set_bnd ( int N, int b, float * x, bool * boundary )
 {
-	int i;
+	int i, j;
 
 	for ( i=1 ; i<=N ; i++ ) {
 		x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];
@@ -21,13 +21,25 @@ void set_bnd ( int N, int b, float * x )
 		x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];
 		x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];
 	}
+
+	// Additional boundary conditions
+	FOR_EACH_CELL
+		if (boundary[IX(i, j)]) {
+			x[IX(i, j)] = 0;
+			x[IX(i - 1, j)] = b == 1 ? -x[IX(i - 2, j)] : x[IX(i - 2, j)];
+			x[IX(i + 1, j)] = b == 1 ? -x[IX(i + 2, j)] : x[IX(i + 2, j)];
+			x[IX(i, j - 1)] = b == 2 ? -x[IX(i, j - 2)] : x[IX(i, j - 2)];
+			x[IX(i, j + 1)] = b == 2 ? -x[IX(i, j + 2)] : x[IX(i, j + 2)];
+		}
+	END_FOR
+
 	x[IX(0  ,0  )] = 0.5f*(x[IX(1,0  )]+x[IX(0  ,1)]);
 	x[IX(0  ,N+1)] = 0.5f*(x[IX(1,N+1)]+x[IX(0  ,N)]);
 	x[IX(N+1,0  )] = 0.5f*(x[IX(N,0  )]+x[IX(N+1,1)]);
 	x[IX(N+1,N+1)] = 0.5f*(x[IX(N,N+1)]+x[IX(N+1,N)]);
 }
 
-void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
+void lin_solve ( int N, int b, float * x, float * x0, bool * boundary, float a, float c )
 {
 	int i, j, k;
 
@@ -35,17 +47,17 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
 		FOR_EACH_CELL
 			x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c;
 		END_FOR
-		set_bnd ( N, b, x );
+		set_bnd ( N, b, x, boundary );
 	}
 }
 
-void diffuse ( int N, int b, float * x, float * x0, float diff, float dt )
+void diffuse ( int N, int b, float * x, float * x0, bool * boundary, float diff, float dt )
 {
 	float a=dt*diff*N*N;
-	lin_solve ( N, b, x, x0, a, 1+4*a );
+	lin_solve ( N, b, x, x0, boundary, a, 1+4*a );
 }
 
-void advect ( int N, int b, float * d, float * d0, float * u, float * v, float dt )
+void advect ( int N, int b, float * d, float * d0, float * u, float * v, bool * boundary, float dt )
 {
 	int i, j, i0, j0, i1, j1;
 	float x, y, s0, t0, s1, t1, dt0;
@@ -59,10 +71,10 @@ void advect ( int N, int b, float * d, float * d0, float * u, float * v, float d
 		d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)]+t1*d0[IX(i0,j1)])+
 					 s1*(t0*d0[IX(i1,j0)]+t1*d0[IX(i1,j1)]);
 	END_FOR
-	set_bnd ( N, b, d );
+	set_bnd ( N, b, d, boundary );
 }
 
-void project ( int N, float * u, float * v, float * p, float * div )
+void project ( int N, float * u, float * v, float * p, float * div, bool * boundary )
 {
 	int i, j;
 
@@ -70,31 +82,31 @@ void project ( int N, float * u, float * v, float * p, float * div )
 		div[IX(i,j)] = -0.5f*(u[IX(i+1,j)]-u[IX(i-1,j)]+v[IX(i,j+1)]-v[IX(i,j-1)])/N;
 		p[IX(i,j)] = 0;
 	END_FOR	
-	set_bnd ( N, 0, div ); set_bnd ( N, 0, p );
+	set_bnd ( N, 0, div, boundary ); set_bnd ( N, 0, p, boundary );
 
-	lin_solve ( N, 0, p, div, 1, 4 );
+	lin_solve ( N, 0, p, div, boundary, 1, 4 );
 
 	FOR_EACH_CELL
 		u[IX(i,j)] -= 0.5f*N*(p[IX(i+1,j)]-p[IX(i-1,j)]);
 		v[IX(i,j)] -= 0.5f*N*(p[IX(i,j+1)]-p[IX(i,j-1)]);
 	END_FOR
-	set_bnd ( N, 1, u ); set_bnd ( N, 2, v );
+	set_bnd ( N, 1, u, boundary ); set_bnd ( N, 2, v, boundary );
 }
 
-void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff, float dt )
+void dens_step ( int N, float * x, float * x0, float * u, float * v, bool * boundary, float diff, float dt )
 {
 	add_source ( N, x, x0, dt );
-	SWAP ( x0, x ); diffuse ( N, 0, x, x0, diff, dt );
-	SWAP ( x0, x ); advect ( N, 0, x, x0, u, v, dt );
+	SWAP ( x0, x ); diffuse ( N, 0, x, x0, boundary, diff, dt );
+	SWAP ( x0, x ); advect ( N, 0, x, x0, u, v, boundary, dt );
 }
 
-void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt )
+void vel_step ( int N, float * u, float * v, float * u0, float * v0, bool * boundary, float visc, float dt )
 {
 	add_source ( N, u, u0, dt ); add_source ( N, v, v0, dt );
-	SWAP ( u0, u ); diffuse ( N, 1, u, u0, visc, dt );
-	SWAP ( v0, v ); diffuse ( N, 2, v, v0, visc, dt );
-	project ( N, u, v, u0, v0 );
+	SWAP ( u0, u ); diffuse ( N, 1, u, u0, boundary, visc, dt );
+	SWAP ( v0, v ); diffuse ( N, 2, v, v0, boundary, visc, dt );
+	project ( N, u, v, u0, v0, boundary );
 	SWAP ( u0, u ); SWAP ( v0, v );
-	advect ( N, 1, u, u0, u0, v0, dt ); advect ( N, 2, v, v0, u0, v0, dt );
-	project ( N, u, v, u0, v0 );
+	advect ( N, 1, u, u0, u0, v0, boundary, dt ); advect ( N, 2, v, v0, u0, v0, boundary, dt );
+	project ( N, u, v, u0, v0, boundary );
 }

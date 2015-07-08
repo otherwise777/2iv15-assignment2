@@ -19,7 +19,7 @@ static float force, source;
 static int dvel;
 static int dboundaries;
 
-static float * u, * v, * u_prev, * v_prev;
+static float * u, * v, * u_prev, * v_prev, * squareObject;
 static float * dens, * dens_prev;
 static bool * boundary;
 
@@ -44,6 +44,7 @@ static void free_data ( void )
 	if ( v_prev ) free ( v_prev );
 	if ( dens ) free ( dens );
 	if ( dens_prev ) free ( dens_prev );
+	if ( boundary ) free ( boundary );
 }
 
 static void clear_data ( void )
@@ -98,6 +99,12 @@ static void pre_display ( void )
 static void post_display ( void )
 {
 	glutSwapBuffers ();
+}
+
+
+//function to get the object num, same as IX so useless
+static int getObjectNum(int i, int j) {
+	return((i)+(N + 2)*(j));
 }
 
 static void draw_velocity ( void )
@@ -210,7 +217,7 @@ static void get_from_UI ( float * d, float * u, float * v )
 		u[IX(i,j)] = force * (mx-omx);
 		v[IX(i,j)] = force * (omy-my);
 	}
-	
+
 	// Draw boundaries
 	if ( mouse_down[0] && dboundaries) {
 		boundary[IX(i,j)] = true;
@@ -219,7 +226,7 @@ static void get_from_UI ( float * d, float * u, float * v )
 	if ( mouse_down[2] ) {
 		d[IX(i,j)] = source;
 	}
-	
+
 	omx = mx;
 	omy = my;
 
@@ -254,7 +261,8 @@ static void key_func ( unsigned char key, int x, int y )
 
 	case 'b':
 	case 'B':
-		dboundaries = !dboundaries;		
+		dboundaries = !dboundaries;
+		printf("The boundary mode has been turned %s.\n", (dboundaries ? "on" : "off"));
 		break;
 	}
 }

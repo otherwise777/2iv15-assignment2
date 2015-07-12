@@ -26,10 +26,10 @@ void set_bnd ( int N, int b, float * x, bool * boundary )
 	FOR_EACH_CELL
 		if (boundary[IX(i, j)]) {
 			x[IX(i, j)] = 0;
-			x[IX(i - 1, j)] = b == 1 ? -x[IX(i - 2, j)] : x[IX(i - 2, j)];
-			x[IX(i + 1, j)] = b == 1 ? -x[IX(i + 2, j)] : x[IX(i + 2, j)];
-			x[IX(i, j - 1)] = b == 2 ? -x[IX(i, j - 2)] : x[IX(i, j - 2)];
-			x[IX(i, j + 1)] = b == 2 ? -x[IX(i, j + 2)] : x[IX(i, j + 2)];
+			x[IX(i - 1, j)] = b==1 ? -x[IX(i - 2, j)] : x[IX(i - 2, j)];
+			x[IX(i + 1, j)] = b==1 ? -x[IX(i + 2, j)] : x[IX(i + 2, j)];
+			x[IX(i, j - 1)] = b==2 ? -x[IX(i, j - 2)] : x[IX(i, j - 2)];
+			x[IX(i, j + 1)] = b==2 ? -x[IX(i, j + 2)] : x[IX(i, j + 2)];
 		}
 	END_FOR
 

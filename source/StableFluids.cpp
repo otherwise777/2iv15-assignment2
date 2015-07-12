@@ -171,9 +171,9 @@ static void draw_boundaries ( void )
 	glBegin ( GL_QUADS );
 
 	for ( i=0 ; i<=N ; i++ ) {
-		x = (i-0.5f)*h;
+		x = (i-1.0f)*h;
 		for ( j=0 ; j<=N ; j++ ) {
-			y = (j-0.5f)*h;
+			y = (j-1.0f)*h;
 
 			if (boundary[IX(i,j)]) {
 				d00 = 0.3;

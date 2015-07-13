@@ -226,3 +226,4 @@ FakesAssemblies/
 *.log
 
 Source/Debug/
+*.vcxproj

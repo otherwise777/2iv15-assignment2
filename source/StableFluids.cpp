@@ -1,6 +1,11 @@
+using namespace std;
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/glut.h>
+#include <vector>
+
+#include "RigidBody.h"
 
 /* macros */
 
@@ -28,6 +33,7 @@ static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
 
+static vector<RigidBody *> rigidBodies;
 
 /*
 ----------------------------------------------------------------------
@@ -192,6 +198,15 @@ static void draw_boundaries ( void )
 	glEnd ();
 }
 
+static void draw_rigidbodies ( void )
+{
+	for (int i = 0; i < rigidBodies.size(); i++) {
+		rigidBodies[i]->draw();
+	}
+}
+
+
+
 /*
 ----------------------------------------------------------------------
 relates mouse movements to forces sources
@@ -309,6 +324,8 @@ static void display_func ( void )
 
 	draw_boundaries();
 
+	draw_rigidbodies();
+
 	post_display ();
 }
 
@@ -392,6 +409,9 @@ int main ( int argc, char ** argv )
 	printf ( "\t Quit by pressing the 'q' key\n" );
 
 	dvel = 0;
+
+	// TODO: remove testing only
+	rigidBodies.push_back(new RigidBody());
 
 	if ( !allocate_data () ) exit ( 1 );
 	clear_data ();

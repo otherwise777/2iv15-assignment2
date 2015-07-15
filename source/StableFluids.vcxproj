@@ -89,10 +89,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="RigidBody.cpp" />
     <ClCompile Include="Solver.cpp" />
     <ClCompile Include="StableFluids.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="RigidBody.h" />
     <ClInclude Include="Solver.h" />
   </ItemGroup>
   <ItemGroup>

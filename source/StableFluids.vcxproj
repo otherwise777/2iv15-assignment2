@@ -89,13 +89,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Rectangle.cpp" />
     <ClCompile Include="RigidBody.cpp" />
     <ClCompile Include="Solver.cpp" />
     <ClCompile Include="StableFluids.cpp" />
+    <ClCompile Include="Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Rectangle.h" />
     <ClInclude Include="RigidBody.h" />
     <ClInclude Include="Solver.h" />
+    <ClInclude Include="Triangle.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />

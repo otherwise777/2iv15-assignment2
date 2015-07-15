@@ -100,13 +100,26 @@ void dens_step ( int N, float * x, float * x0, float * u, float * v, bool * boun
 	SWAP ( x0, x ); advect ( N, 0, x, x0, u, v, boundary, dt );
 }
 
-void vel_step ( int N, float * u, float * v, float * u0, float * v0, bool * boundary, float visc, float dt )
+void vel_step ( int N, float * u, float * v, float * u0, float * v0, bool * boundary, vector<RigidBody*> rigidbodies, float visc, float dt )
 {
 	add_source ( N, u, u0, dt ); add_source ( N, v, v0, dt );
+
+	for (int i = 0; i < rigidbodies.size(); i++) {
+		//rigidbodies[i] -> calculateVelocityField();
+		//add_source ( N, u, rigidbodies[i]->u, dt ); 
+		//add_source ( N, v, rigidbodies[i]->v, dt );
+	}
+
+
 	SWAP ( u0, u ); diffuse ( N, 1, u, u0, boundary, visc, dt );
 	SWAP ( v0, v ); diffuse ( N, 2, v, v0, boundary, visc, dt );
 	project ( N, u, v, u0, v0, boundary );
 	SWAP ( u0, u ); SWAP ( v0, v );
 	advect ( N, 1, u, u0, u0, v0, boundary, dt ); advect ( N, 2, v, v0, u0, v0, boundary, dt );
 	project ( N, u, v, u0, v0, boundary );
+
+		
+	for (int i = 0; i < rigidbodies.size(); i++) {
+		rigidbodies[i] -> accumulate(u, v);
+	}
 }

@@ -17,6 +17,8 @@ public:
 
 	RigidBody(int vertexCount, int N);
 
+	bool pointInPolygon(int i, int j);
+
 	bool pointInPolygon(float x, float y);
 
 	void accumulate(float* u, float* v);
@@ -32,6 +34,7 @@ public:
 private:
 	int m_vertexCount;
 	int m_N;
+	float h;
 
 	void updateVertices(void);
 

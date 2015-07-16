@@ -6,8 +6,6 @@ class Rectangle : public RigidBody
 public:
 	Rectangle(void);
 
-	void Rectangle::act(float* u, float* v);
-
 	~Rectangle(void);
 };
 

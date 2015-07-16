@@ -3,6 +3,7 @@
 RigidBody::RigidBody(int vertexCount, int N)
 {
 	m_N = N;
+	h = 1.0f/m_N;
 	int size = (N+2)*(N+2);
 
 	m_vertexCount = vertexCount;
@@ -23,6 +24,13 @@ RigidBody::RigidBody(int vertexCount, int N)
 	m_momentum = 0;
 }
 
+bool RigidBody::pointInPolygon(int i, int j) {
+	float x = (i-0.5f)*h;
+	float y = (j-0.5f)*h;
+
+	return pointInPolygon(x, y);
+}
+
 bool RigidBody::pointInPolygon(float x, float y) {
 	int i, j;
 	bool c = false;
@@ -35,49 +43,85 @@ bool RigidBody::pointInPolygon(float x, float y) {
 }
 
 void RigidBody::accumulate(float* u, float* v) {
-	float h = 1.0f/m_N;
 
 	int i, j;
 	float x, y;
-	
-	float vel[] = {0, 0};
+
+	float vel[] = {0.5, 0};
 	m_momentum = 0;
 	FOR_EACH_CELL
 		x = (i-0.5f)*h;
 		y = (j-0.5f)*h;
+		if (!pointInPolygon(x, y)) {
 
-		vel[0] += u[IX(i, j)] / (m_mass * 100);
-		vel[1] += v[IX(i, j)] / (m_mass * 100);
+			int n, m;
+			float x2, y2;
+			bool joboundary = false;
+			for ( n = -1; n <= 1; n++) {
+				for ( m = -1; m <= 1; m++) {
+					x2 = (i + n - 0.5f)*h;
+					y2 = (j + m - 0.5f)*h;
 
-		m_momentum += (x - m_position[0]) * u[IX(i, j)] / (m_mass * 100);
-		m_momentum += (y - m_position[1]) * v[IX(i, j)] / (m_mass * 100);
+					if(pointInPolygon(x2, y2)) {
+						joboundary = true;
+					}
+				}
+			}
+
+			if (joboundary) {
+				vel[0] += u[IX(i, j)];
+				vel[1] += v[IX(i, j)];
+
+				m_momentum += (x - m_position[0]) * u[IX(i, j)];
+				m_momentum += (y - m_position[1]) * v[IX(i, j)];
+			}
+		}
 	END_FOR
 
-	float diff[] = {m_velocity[0] - (vel[0] / m_mass), m_velocity[1] - (vel[1] / m_mass)};
-	m_velocity[0] += diff[0] * 0.004f;
-	m_velocity[1] += diff[1] * 0.004f;
+	float diff[] = {m_velocity[0] + vel[0], m_velocity[1] + vel[1]};
+	m_velocity[0] += diff[0] * 0.00004f;
+	m_velocity[1] += diff[1] * 0.00004f;
 
-		cout << m_velocity;
+	m_velocity[0] *= 0.97;
+	m_velocity[1] *= 0.97;
+
+	m_position[0] += m_velocity[0];
+	m_position[1] += m_velocity[1];
+	m_rotation += m_momentum * 0.5f;
+
 }
 
 void RigidBody::calculateVelocityField(void)
 {
-	float h = 1.0f/m_N;
-
-	float x;
-	float y;
-
+	float x, y;
 	int i, j;
 	FOR_EACH_CELL
 		x = (i-0.5f)*h;
 		y = (j-0.5f)*h;
+		if (!pointInPolygon(x, y)) {
 
-		u[IX(i,j)] = 0;
-		v[IX(i,j)] = 0;
-		if (pointInPolygon(x, y)){
-			u[IX(i,j)] = (m_momentum * (x - m_position[0]) + m_velocity[0]) * 10;
-			v[IX(i,j)] = (m_momentum * (y - m_position[1]) + m_velocity[1]) * 10;
-		} 
+			int n, m;
+			float x2, y2;
+			bool joboundary = false;
+			for ( n = -2; n <= 2; n++) {
+				for ( m = -2; m <= 2; m++) {
+					x2 = (i + n - 0.5f)*h;
+					y2 = (j + m - 0.5f)*h;
+
+					if(pointInPolygon(x2, y2)) {
+						joboundary = true;
+					}
+				}
+			}
+
+			if (joboundary) {
+				u[IX(i, j)] = m_velocity[0];
+				v[IX(i, j)] = m_velocity[1];
+			} else {
+				u[IX(i, j)] = 0;
+				v[IX(i, j)] = 0;
+			}
+		}
 	END_FOR
 }
 void RigidBody::calculateMass(void)
@@ -177,10 +221,6 @@ void RigidBody::reset(void) {
 
 void RigidBody::draw(void)
 {
-	m_position[0] += m_velocity[0];
-	m_position[1] += m_velocity[1];
-	m_rotation += m_momentum;
-
 	updateVertices();
 
 	glBegin(GL_POLYGON);
@@ -196,6 +236,38 @@ void RigidBody::draw(void)
 	glColor3f(1.0, 0.0, 0.0);
 	glVertex2f(m_position[0], m_position[1]);
 	glEnd();
+
+	int i, j;
+	float x, y;
+	FOR_EACH_CELL
+		x = (i-0.5f)*h;
+	y = (j-0.5f)*h;
+	if (!pointInPolygon(x, y)) {
+
+		int n, m;
+		float x2, y2;
+		bool test = false;
+		for ( n = -1; n <= 1; n++) {
+			for ( m = -1; m <= 1; m++) {
+				x2 = (i + n - 0.5f)*h;
+				y2 = (j + m - 0.5f)*h;
+
+				if(pointInPolygon(x2, y2)) {
+					test = true;
+				}
+			}
+		}
+
+		if (test) {
+			glPointSize(2.0f);
+			glBegin(GL_POINTS);	
+			glColor3f(1.0, 0.0, 0.0);
+			glVertex2f(x, y);
+			glEnd();
+		}
+	}
+	END_FOR
+
 }
 
 RigidBody::~RigidBody(void)

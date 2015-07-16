@@ -15,7 +15,7 @@ using namespace std;
 
 /* external definitions (from Solver.cpp) */
 
-extern void dens_step ( int N, float * x, float * x0, float * u, float * v, bool * boundary, float diff, float dt );
+extern void dens_step ( int N, float * x, float * x0, float * u, float * v, bool * boundary, vector<RigidBody*> rigidBodies, float diff, float dt );
 extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, bool * boundary, vector<RigidBody*> rigidBodies, float visc, float dt );
 
 /* global variables */
@@ -213,32 +213,6 @@ static void draw_rigidbodies ( void )
 		h = 1.0f/N;
 
 		rigidBodies[r]->draw();
-
-		glBegin ( GL_QUADS );
-		for ( i=0 ; i<=N ; i++ ) {
-			x = (i-0.5f)*h;
-			for ( j=0 ; j<=N ; j++ ) {
-				y = (j-0.5f)*h;
-
-				if (rigidBodies[r] -> pointInPolygon(x, y)) {
-					d00 = 0.3;
-					d01 = 0.7;
-					d10 = 0.3;
-					d11 = 0.3;
-
-					glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-					glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-					glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-					glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
-				}
-			}
-		}
-
-		glEnd ();
-
-
-
-
 	}
 }
 
@@ -346,7 +320,7 @@ static void idle_func ( void )
 {
 	get_from_UI ( dens_prev, u_prev, v_prev );
 	vel_step ( N, u, v, u_prev, v_prev, boundary, rigidBodies, visc, dt );
-	dens_step ( N, dens, dens_prev, u, v, boundary, diff, dt );
+	dens_step ( N, dens, dens_prev, u, v, boundary, rigidBodies, diff, dt );
 
 	glutSetWindow ( win_id );
 	glutPostRedisplay ();
@@ -448,7 +422,7 @@ int main ( int argc, char ** argv )
 	dvel = 0;
 
 	// TODO: remove testing only
-	rigidBodies.push_back(new Triangle());
+	rigidBodies.push_back(new Rectangle());
 
 	if ( !allocate_data () ) exit ( 1 );
 	clear_data ();

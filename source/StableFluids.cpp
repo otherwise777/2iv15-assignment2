@@ -67,10 +67,10 @@ void createCloth() {
 	double ks = 0.8;
 	double kd = 0.8;
 
-	int width = 7;
-	int height = 6;
+	int width = 4;
+	int height = 4;
 
-	double dist = 0.08;
+	double dist = 0.16;
 	Vec2f position = Vec2f((width * dist) / 2, 0.70);
 
 	for (int y = 0; y < height; y++) {
@@ -360,8 +360,10 @@ static void get_from_UI ( float * d, float * u, float * v )
 	if ( mouse_down[0] && dboundaries) {
 		boundary[IX(i,j)] = true;
 	}
-
-	if ( mouse_down[2] ) {
+	if (mouse_down[2] && dboundaries) {
+		boundary[IX(i, j)] = false;
+	}
+	if (mouse_down[2] && !dboundaries) {
 		d[IX(i,j)] = source;
 	}
 
@@ -544,7 +546,7 @@ int main ( int argc, char ** argv )
 	if ( !allocate_data () ) exit ( 1 );
 	clear_data ();
 
-	createCloth();
+	//createCloth();
 
 	win_x = 512;
 	win_y = 512;

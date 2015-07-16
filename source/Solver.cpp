@@ -153,7 +153,7 @@ void vel_step ( int N, float * u, float * v, float * u0, float * v0, bool * boun
 {
 	add_source ( N, u, u0, dt ); add_source ( N, v, v0, dt );
 
-	vorticityConfinement( N, u, v );
+	//vorticityConfinement( N, u, v );
 
 	for (int i = 0; i < rigidbodies.size(); i++) {
 		rigidbodies[i] -> calculateVelocityField();

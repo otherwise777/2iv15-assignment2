@@ -14,7 +14,7 @@ Rectangle::Rectangle(void) :
 
 	calculateCenterOfMass();
 
-	m_position[0] = 0.5;
+	m_position[0] = 0.1;
 	m_position[1] = 0.5;
 	m_momentum = 0.005;
 	m_scale = 0.25;

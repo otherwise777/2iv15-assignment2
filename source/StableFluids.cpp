@@ -5,6 +5,20 @@ using namespace std;
 #include <GL/glut.h>
 #include <vector>
 
+#include "Particle.h"
+#include "SpringForce.h"
+#include "Gravity.h"
+#include "RodConstraint.h"
+#include "IForce.h"
+#include "IConstraint.h"
+#include "MouseForce.h"
+#include "CircularWireConstraint.h"
+#include "HorizontalWireConstraint.h"
+#include "PointConstraint.h"
+#include "DragForce.h"
+#include "IntegrationScheme.h"
+#include "AngularSpringForce.h"
+#include "WallForce.h"
 #include "RigidBody.h"
 #include "Triangle.h"
 #include "Rectangle.h"
@@ -17,6 +31,9 @@ using namespace std;
 
 extern void dens_step ( int N, float * x, float * x0, float * u, float * v, bool * boundary, vector<RigidBody*> rigidBodies, float diff, float dt );
 extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, bool * boundary, vector<RigidBody*> rigidBodies, float visc, float dt );
+extern void simulation_step(std::vector<Particle*> pVector, std::vector<IForce*> forces, std::vector<IConstraint*> constraints, float dt);
+extern void changeIntegrationScheme(void);
+extern string getIntegrationScheme(void);
 
 /* global variables */
 
@@ -36,13 +53,75 @@ static int mouse_down[3];
 static int omx, omy, mx, my;
 
 static vector<RigidBody *> rigidBodies;
+static vector<Particle*> pVector;
+static vector<IForce*> forces;
+static vector<IForce*> gravityForces;
+static vector<IForce*> nogravityForces;
+static vector<IConstraint*> constraints;
+
+Particle* getParticle(int width, int height, int x, int y) {
+	return pVector[y * width + x];
+}
+
+void createCloth() {
+	double ks = 0.8;
+	double kd = 0.8;
+
+	int width = 7;
+	int height = 6;
+
+	double dist = 0.08;
+	Vec2f position = Vec2f((width * dist) / 2, 0.70);
+
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+
+			// Currently added particle
+			Particle* p = new Particle(Vec2f(x * dist - 0.1, y * -dist) + position);
+			pVector.push_back(p);
+
+			// Add gravity to particle
+			rigidBodies.push_back(p);
+
+			if (x > 0) { 
+				Particle *p1 = getParticle(width, height, x-1, y);
+				forces.push_back(new SpringForce(p, p1, ks, kd));
+			}
+
+			if (x > 1) { 
+				Particle *p1 = getParticle(width, height, x - 2, y);
+				forces.push_back(new SpringForce(p, p1, ks, kd));
+			}
+
+			if (y > 0) { 
+				Particle *p2 = getParticle(width, height, x, y - 1);
+				forces.push_back(new SpringForce(p, p2, ks, kd));
+			}
+
+			if (y > 1) { 
+				Particle *p2 = getParticle(width, height, x, y - 2);
+				forces.push_back(new SpringForce(p, p2, ks, kd));
+			}
+
+			if (x > 0 && y > 0) { 
+				Particle *p3 = getParticle(width, height, x - 1, y - 1);
+				forces.push_back(new SpringForce(p, p3, ks, kd));
+			}
+
+			if (x < width - 1 && y > 0) { 
+				Particle *p4 = getParticle(width, height, x + 1, y - 1);
+				forces.push_back(new SpringForce(p, p4, ks, kd));
+			}
+		}
+	}
+
+}
 
 /*
 ----------------------------------------------------------------------
 free/clear/allocate simulation data
 ----------------------------------------------------------------------
 */
-
 
 static void free_data ( void )
 {
@@ -89,8 +168,6 @@ static int allocate_data ( void )
 	clear_data();
 	return ( 1 );
 }
-
-
 
 /*
 ----------------------------------------------------------------------
@@ -216,7 +293,42 @@ static void draw_rigidbodies ( void )
 	}
 }
 
+static void draw_particles ( void )
+{
+	int size = pVector.size();
 
+	for(int ii=0; ii< size; ii++)
+	{
+		pVector[ii]->draw();
+	}
+
+	for(int ii=0; ii< size; ii++)
+	{
+		pVector[ii]->drawForce();
+	}
+
+	for(int ii=0; ii< size; ii++)
+	{
+		pVector[ii]->drawSpeed();
+	}
+}
+
+static void draw_forces(void)
+{
+	for (int i = 0; i < forces.size(); i++) {
+		forces[i] -> draw();
+	}
+}
+
+static void draw_constraints ( void )
+{
+	int size = constraints.size();
+
+	for(int n=0; n< size; n++)
+	{
+		constraints[n]->draw();
+	}
+}
 
 /*
 ----------------------------------------------------------------------
@@ -321,6 +433,7 @@ static void idle_func ( void )
 	get_from_UI ( dens_prev, u_prev, v_prev );
 	vel_step ( N, u, v, u_prev, v_prev, boundary, rigidBodies, visc, dt );
 	dens_step ( N, dens, dens_prev, u, v, boundary, rigidBodies, diff, dt );
+	simulation_step(pVector, forces, constraints, dt);
 
 	glutSetWindow ( win_id );
 	glutPostRedisplay ();
@@ -336,6 +449,10 @@ static void display_func ( void )
 	draw_boundaries();
 
 	draw_rigidbodies();
+
+		draw_forces();
+	draw_constraints();
+	draw_particles();
 
 	post_display ();
 }
@@ -426,6 +543,8 @@ int main ( int argc, char ** argv )
 
 	if ( !allocate_data () ) exit ( 1 );
 	clear_data ();
+
+	createCloth();
 
 	win_x = 512;
 	win_y = 512;

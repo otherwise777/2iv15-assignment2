@@ -15,7 +15,8 @@
 #if defined(HAVE_CONFIG_H)
 #  include "config.h"
 #elif defined(_MSC_VER)
-#  include "config-vc.h"
+//#  include "config-vc.h"
+#  include "config.h"
 #elif defined(__APPLE__)
 #  include "config-osx.h"
 #endif
@@ -73,8 +74,8 @@ namespace gfx
 {
 
 #if defined(HAVE_RANDOM)
-  inline double random1() { return (double)random() / (double)LONG_MAX; }
-  inline char   random_byte() { return (char)(random() & 0xff); }
+  inline double random1() { return (double)rand() / (double)LONG_MAX; }
+  inline char   random_byte() { return (char)(rand() & 0xff); }
 #else
   inline double random1() { return (double)rand() / (double)RAND_MAX; }
   inline char   random_byte() { return (char)(rand() & 0xff); }

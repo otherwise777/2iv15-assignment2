@@ -90,17 +90,56 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AngularSpringForce.cpp" />
+    <ClCompile Include="CircularWireConstraint.cpp" />
+    <ClCompile Include="ConstraintSolver.cpp" />
+    <ClCompile Include="DragForce.cpp" />
+    <ClCompile Include="Euler.cpp" />
+    <ClCompile Include="Gravity.cpp" />
+    <ClCompile Include="HorizontalWireConstraint.cpp" />
+    <ClCompile Include="linearSolver.cpp" />
+    <ClCompile Include="Matrix.cpp" />
+    <ClCompile Include="MidPoint.cpp" />
+    <ClCompile Include="MouseForce.cpp" />
+    <ClCompile Include="Particle.cpp" />
+    <ClCompile Include="PointConstraint.cpp" />
     <ClCompile Include="Rectangle.cpp" />
     <ClCompile Include="RigidBody.cpp" />
+    <ClCompile Include="RodConstraint.cpp" />
+    <ClCompile Include="RungeKutta4thOrder.cpp" />
     <ClCompile Include="Solver.cpp" />
+    <ClCompile Include="SolverT.cpp" />
+    <ClCompile Include="SpringForce.cpp" />
     <ClCompile Include="StableFluids.cpp" />
     <ClCompile Include="Triangle.cpp" />
+    <ClCompile Include="WallForce.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AngularSpringForce.h" />
+    <ClInclude Include="CircularWireConstraint.h" />
+    <ClInclude Include="ConstraintSolver.h" />
+    <ClInclude Include="DragForce.h" />
+    <ClInclude Include="Euler.h" />
+    <ClInclude Include="Gravity.h" />
+    <ClInclude Include="HorizontalWireConstraint.h" />
+    <ClInclude Include="IConstraint.h" />
+    <ClInclude Include="IForce.h" />
+    <ClInclude Include="IntegrationScheme.h" />
+    <ClInclude Include="linearSolver.h" />
+    <ClInclude Include="Matrix.h" />
+    <ClInclude Include="MidPoint.h" />
+    <ClInclude Include="MouseForce.h" />
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="PointConstraint.h" />
     <ClInclude Include="Rectangle.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="RigidBody.h" />
+    <ClInclude Include="RodConstraint.h" />
+    <ClInclude Include="RungeKutta4thOrder.h" />
     <ClInclude Include="Solver.h" />
+    <ClInclude Include="SpringForce.h" />
     <ClInclude Include="Triangle.h" />
+    <ClInclude Include="WallForce.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />

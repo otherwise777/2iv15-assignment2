@@ -17,7 +17,7 @@ static int N;
 static float dt, diff, visc;
 static float force, source;
 static int dvel;
-static int dboundaries;
+static bool dboundaries; //boolean to check if boundaries should be added or not.
 
 static float * u, * v, * u_prev, * v_prev, * squareObject;
 static float * dens, * dens_prev;
@@ -192,6 +192,17 @@ static void draw_boundaries ( void )
 	glEnd ();
 }
 
+static void draw_triangle(void) {
+	//glBegin(GL_TRIANGLES);
+	//glColor3f(0.0f, 1.0f, 0.0f);
+
+	//glVertex2f(0.4, 0.5);
+	//glVertex2f(0.6, 0.6);
+	//glVertex2f(0.6, 0.4);
+
+	//glEnd();
+}
+
 /*
 ----------------------------------------------------------------------
 relates mouse movements to forces sources
@@ -220,10 +231,12 @@ static void get_from_UI ( float * d, float * u, float * v )
 
 	// Draw boundaries
 	if ( mouse_down[0] && dboundaries) {
-		boundary[IX(i,j)] = true;
+		boundary[IX(i, j)] = true;
 	}
-
-	if ( mouse_down[2] ) {
+	if (mouse_down[2] && dboundaries) {
+		boundary[IX(i, j)] = false;
+	}
+	if (mouse_down[2] && !dboundaries) {
 		d[IX(i,j)] = source;
 	}
 
@@ -308,6 +321,9 @@ static void display_func ( void )
 	else		draw_density ();
 
 	draw_boundaries();
+
+	draw_triangle();
+
 
 	post_display ();
 }

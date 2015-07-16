@@ -1,6 +1,13 @@
+using namespace std;
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/glut.h>
+#include <vector>
+
+#include "RigidBody.h"
+#include "Triangle.h"
+#include "Rectangle.h"
 
 /* macros */
 
@@ -8,8 +15,8 @@
 
 /* external definitions (from Solver.cpp) */
 
-extern void dens_step ( int N, float * x, float * x0, float * u, float * v, bool * boundary, float diff, float dt );
-extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, bool * boundary, float visc, float dt );
+extern void dens_step ( int N, float * x, float * x0, float * u, float * v, bool * boundary, vector<RigidBody*> rigidBodies, float diff, float dt );
+extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, bool * boundary, vector<RigidBody*> rigidBodies, float visc, float dt );
 
 /* global variables */
 
@@ -28,6 +35,7 @@ static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
 
+static vector<RigidBody *> rigidBodies;
 
 /*
 ----------------------------------------------------------------------
@@ -54,6 +62,10 @@ static void clear_data ( void )
 	for ( i=0 ; i<size ; i++ ) {
 		u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
 		boundary[i] = false;
+	}
+
+	for (i = 0; i < rigidBodies.size(); i++) {
+		rigidBodies[i] -> reset();
 	}
 }
 
@@ -192,6 +204,20 @@ static void draw_boundaries ( void )
 	glEnd ();
 }
 
+static void draw_rigidbodies ( void )
+{
+	for (int r = 0; r < rigidBodies.size(); r++) {
+		int i, j;
+		float x, y, h, d00, d01, d10, d11;
+
+		h = 1.0f/N;
+
+		rigidBodies[r]->draw();
+	}
+}
+
+
+
 /*
 ----------------------------------------------------------------------
 relates mouse movements to forces sources
@@ -293,8 +319,8 @@ static void reshape_func ( int width, int height )
 static void idle_func ( void )
 {
 	get_from_UI ( dens_prev, u_prev, v_prev );
-	vel_step ( N, u, v, u_prev, v_prev, boundary, visc, dt );
-	dens_step ( N, dens, dens_prev, u, v, boundary, diff, dt );
+	vel_step ( N, u, v, u_prev, v_prev, boundary, rigidBodies, visc, dt );
+	dens_step ( N, dens, dens_prev, u, v, boundary, rigidBodies, diff, dt );
 
 	glutSetWindow ( win_id );
 	glutPostRedisplay ();
@@ -308,6 +334,8 @@ static void display_func ( void )
 	else		draw_density ();
 
 	draw_boundaries();
+
+	draw_rigidbodies();
 
 	post_display ();
 }
@@ -392,6 +420,9 @@ int main ( int argc, char ** argv )
 	printf ( "\t Quit by pressing the 'q' key\n" );
 
 	dvel = 0;
+
+	// TODO: remove testing only
+	rigidBodies.push_back(new Rectangle());
 
 	if ( !allocate_data () ) exit ( 1 );
 	clear_data ();
